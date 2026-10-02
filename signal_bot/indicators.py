@@ -25,3 +25,17 @@ def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
         axis=1,
     ).max(axis=1)
     return true_range.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
+
+
+def adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """Average Directional Index: trend strength (0-100). Above ~20-25 = trending market."""
+    up = df["high"].diff()
+    down = -df["low"].diff()
+    plus_dm = up.where((up > down) & (up > 0), 0.0)
+    minus_dm = down.where((down > up) & (down > 0), 0.0)
+    atr_ = atr(df, period)
+    smooth = lambda s: s.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
+    plus_di = 100 * smooth(plus_dm) / atr_
+    minus_di = 100 * smooth(minus_dm) / atr_
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di)
+    return smooth(dx)
